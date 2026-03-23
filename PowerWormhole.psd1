@@ -14,7 +14,6 @@
     PowerShellVersion = '5.1'
     FunctionsToExport = @(
         'New-WormholeCode',
-        'Open-Wormhole',
         'Send-WormholeText',
         'Receive-WormholeText',
         'Send-WormholeFile',

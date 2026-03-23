@@ -7,7 +7,6 @@ Describe 'Module import' {
     It 'exports expected public commands' {
         $commands = @(
             'New-WormholeCode',
-            'Open-Wormhole',
             'Send-WormholeText',
             'Receive-WormholeText',
             'Send-WormholeFile',
@@ -17,6 +16,10 @@ Describe 'Module import' {
         foreach ($name in $commands) {
             (Get-Command -Name $name -ErrorAction Stop).Name | Should -Be $name
         }
+    }
+
+    It 'does not export Open-Wormhole' {
+        Get-Command -Name 'Open-Wormhole' -ErrorAction SilentlyContinue | Should -BeNullOrEmpty
     }
 }
 
