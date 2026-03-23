@@ -15,11 +15,7 @@
     FunctionsToExport = @(
         'New-WormholeCode',
         'Send-Wormhole',
-        'Receive-Wormhole',
-        'Send-WormholeText',
-        'Receive-WormholeText',
-        'Send-WormholeFile',
-        'Receive-WormholeFile'
+        'Receive-Wormhole'
     )
     CmdletsToExport = @()
     VariablesToExport = @()

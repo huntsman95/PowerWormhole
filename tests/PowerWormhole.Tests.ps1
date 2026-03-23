@@ -8,11 +8,7 @@ Describe 'Module import' {
         $commands = @(
             'New-WormholeCode',
             'Send-Wormhole',
-            'Receive-Wormhole',
-            'Send-WormholeText',
-            'Receive-WormholeText',
-            'Send-WormholeFile',
-            'Receive-WormholeFile'
+            'Receive-Wormhole'
         )
 
         foreach ($name in $commands) {
@@ -22,6 +18,12 @@ Describe 'Module import' {
 
     It 'does not export Open-Wormhole' {
         Get-Command -Name 'Open-Wormhole' -ErrorAction SilentlyContinue | Should -BeNullOrEmpty
+    }
+
+    It 'does not export legacy send/receive cmdlets' {
+        foreach ($name in @('Send-WormholeText', 'Receive-WormholeText', 'Send-WormholeFile', 'Receive-WormholeFile')) {
+            Get-Command -Name $name -ErrorAction SilentlyContinue | Should -BeNullOrEmpty
+        }
     }
 }
 
@@ -264,19 +266,14 @@ Describe 'File transfer: record encrypt/decrypt round-trip' {
     }
 }
 
-Describe 'Send-WormholeFile and Receive-WormholeFile parameters' {
-    It 'Send-WormholeFile accepts TimeoutSeconds parameter' {
-        $cmd = Get-Command -Name Send-WormholeFile
+Describe 'Receive-Wormhole parameters' {
+    It 'Receive-Wormhole accepts TimeoutSeconds parameter' {
+        $cmd = Get-Command -Name Receive-Wormhole
         $cmd.Parameters.ContainsKey('TimeoutSeconds') | Should -BeTrue
     }
 
-    It 'Receive-WormholeFile accepts TimeoutSeconds parameter' {
-        $cmd = Get-Command -Name Receive-WormholeFile
-        $cmd.Parameters.ContainsKey('TimeoutSeconds') | Should -BeTrue
-    }
-
-    It 'Receive-WormholeFile has OutputDirectory defaulting to current location' {
-        $cmd = Get-Command -Name Receive-WormholeFile
+    It 'Receive-Wormhole accepts OutputDirectory parameter' {
+        $cmd = Get-Command -Name Receive-Wormhole
         $cmd.Parameters.ContainsKey('OutputDirectory') | Should -BeTrue
     }
 }
