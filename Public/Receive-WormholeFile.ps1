@@ -9,6 +9,9 @@ function Receive-WormholeFile {
         [string] $OutputDirectory = (Get-Location).Path,
 
         [Parameter()]
+        [int] $TimeoutSeconds = 300,
+
+        [Parameter()]
         [string] $RelayUrl = $script:PowerWormholeDefaults.RelayUrl,
 
         [Parameter()]
@@ -18,7 +21,9 @@ function Receive-WormholeFile {
     $session = $null
     try {
         $session = Open-Wormhole -Code $Code -RelayUrl $RelayUrl -AppId $AppId
-        Invoke-WormholeFileReceiveProtocol -Session $session -OutputDirectory $OutputDirectory
+        $savedPath = Invoke-WormholeFileReceiveProtocol -Session $session -OutputDirectory $OutputDirectory -TimeoutSeconds $TimeoutSeconds -StatusCallback { param($message) Write-Verbose $message }
+        Write-Host "File saved to: $savedPath"
+        $savedPath
     }
     finally {
         if ($null -ne $session) {

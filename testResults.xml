@@ -1,42 +1,75 @@
 ﻿<?xml version="1.0" encoding="utf-8" standalone="no"?>
-<test-results xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="nunit_schema_2.5.xsd" name="Pester" total="9" errors="0" failures="0" not-run="0" inconclusive="0" ignored="0" skipped="0" invalid="0" date="2026-03-23" time="14:39:11">
-  <environment cwd="G:\Workspace\PWSH\PowerWormhole" nunit-version="2.5.8.0" clr-version="9.0.4" os-version="10.0.26200" platform="Microsoft Windows 11 Enterprise|C:\WINDOWS|\Device\Harddisk5\Partition3" user-domain="THEHUNTZMAN" user="TheHuntzman" machine-name="CENTURION" />
+<test-results xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="nunit_schema_2.5.xsd" name="Pester" total="22" errors="0" failures="0" not-run="0" inconclusive="0" ignored="0" skipped="0" invalid="0" date="2026-03-23" time="15:42:26">
+  <environment clr-version="4.0.30319.42000" user-domain="THEHUNTZMAN" cwd="G:\Workspace\PWSH\PowerWormhole" platform="Microsoft Windows 11 Enterprise|C:\WINDOWS|\Device\Harddisk5\Partition3" machine-name="CENTURION" nunit-version="2.5.8.0" os-version="10.0.26200" user="TheHuntzman" />
   <culture-info current-culture="en-US" current-uiculture="en-US" />
-  <test-suite type="TestFixture" name="Pester" executed="True" result="Success" success="True" time="0.8618" asserts="0" description="Pester">
+  <test-suite type="TestFixture" name="Pester" executed="True" result="Success" success="True" time="6.5076" asserts="0" description="Pester">
     <results>
-      <test-suite type="TestFixture" name="G:\Workspace\PWSH\PowerWormhole\tests\PowerWormhole.Tests.ps1" executed="True" result="Success" success="True" time="0.8618" asserts="0" description="G:\Workspace\PWSH\PowerWormhole\tests\PowerWormhole.Tests.ps1">
+      <test-suite type="TestFixture" name="G:\Workspace\PWSH\PowerWormhole\tests\PowerWormhole.Tests.ps1" executed="True" result="Success" success="True" time="6.5076" asserts="0" description="G:\Workspace\PWSH\PowerWormhole\tests\PowerWormhole.Tests.ps1">
         <results>
-          <test-suite type="TestFixture" name="Module import" executed="True" result="Success" success="True" time="0.0115" asserts="0" description="Module import">
+          <test-suite type="TestFixture" name="Module import" executed="True" result="Success" success="True" time="1.227" asserts="0" description="Module import">
             <results>
-              <test-case description="exports expected public commands" name="Module import.exports expected public commands" time="0.0053" asserts="0" success="True" result="Success" executed="True" />
+              <test-case description="exports expected public commands" name="Module import.exports expected public commands" time="0.8007" asserts="0" success="True" result="Success" executed="True" />
             </results>
           </test-suite>
-          <test-suite type="TestFixture" name="New-WormholeCode" executed="True" result="Success" success="True" time="0.0204" asserts="0" description="New-WormholeCode">
+          <test-suite type="TestFixture" name="New-WormholeCode" executed="True" result="Success" success="True" time="1.2835" asserts="0" description="New-WormholeCode">
             <results>
-              <test-case description="creates nameplate-prefixed code" name="New-WormholeCode.creates nameplate-prefixed code" time="0.0029" asserts="0" success="True" result="Success" executed="True" />
+              <test-case description="creates nameplate-prefixed code" name="New-WormholeCode.creates nameplate-prefixed code" time="0.0517" asserts="0" success="True" result="Success" executed="True" />
             </results>
           </test-suite>
-          <test-suite type="TestFixture" name="Validation helpers" executed="True" result="Success" success="True" time="0.0316" asserts="0" description="Validation helpers">
+          <test-suite type="TestFixture" name="Validation helpers" executed="True" result="Success" success="True" time="1.5383" asserts="0" description="Validation helpers">
             <results>
-              <test-case description="accepts ws relay URL" name="Validation helpers.accepts ws relay URL" time="0.0032" asserts="0" success="True" result="Success" executed="True" />
-              <test-case description="rejects invalid relay URL" name="Validation helpers.rejects invalid relay URL" time="0.0019" asserts="0" success="True" result="Success" executed="True" />
+              <test-case description="accepts ws relay URL" name="Validation helpers.accepts ws relay URL" time="0.219" asserts="0" success="True" result="Success" executed="True" />
+              <test-case description="rejects invalid relay URL" name="Validation helpers.rejects invalid relay URL" time="0.0319" asserts="0" success="True" result="Success" executed="True" />
             </results>
           </test-suite>
-          <test-suite type="TestFixture" name="HKDF" executed="True" result="Success" success="True" time="0.0409" asserts="0" description="HKDF">
+          <test-suite type="TestFixture" name="HKDF" executed="True" result="Success" success="True" time="1.5694" asserts="0" description="HKDF">
             <results>
-              <test-case description="returns requested output length" name="HKDF.returns requested output length" time="0.003" asserts="0" success="True" result="Success" executed="True" />
+              <test-case description="returns requested output length" name="HKDF.returns requested output length" time="0.027" asserts="0" success="True" result="Success" executed="True" />
             </results>
           </test-suite>
-          <test-suite type="TestFixture" name="SPAKE2 compatibility" executed="True" result="Success" success="True" time="0.6291" asserts="0" description="SPAKE2 compatibility">
+          <test-suite type="TestFixture" name="SPAKE2 compatibility" executed="True" result="Success" success="True" time="4.0176" asserts="0" description="SPAKE2 compatibility">
             <results>
-              <test-case description="matches python-spake2 symmetric start vector for seed 1" name="SPAKE2 compatibility.matches python-spake2 symmetric start vector for seed 1" time="0.1382" asserts="0" success="True" result="Success" executed="True" />
-              <test-case description="derives same shared key for two peers" name="SPAKE2 compatibility.derives same shared key for two peers" time="0.444" asserts="0" success="True" result="Success" executed="True" />
+              <test-case description="matches python-spake2 symmetric start vector for seed 1" name="SPAKE2 compatibility.matches python-spake2 symmetric start vector for seed 1" time="0.5747" asserts="0" success="True" result="Success" executed="True" />
+              <test-case description="derives same shared key for two peers" name="SPAKE2 compatibility.derives same shared key for two peers" time="1.8688" asserts="0" success="True" result="Success" executed="True" />
             </results>
           </test-suite>
-          <test-suite type="TestFixture" name="SecretBox compatibility" executed="True" result="Success" success="True" time="0.6526" asserts="0" description="SecretBox compatibility">
+          <test-suite type="TestFixture" name="SecretBox compatibility" executed="True" result="Success" success="True" time="4.2112" asserts="0" description="SecretBox compatibility">
             <results>
-              <test-case description="decrypts known wormhole test vector" name="SecretBox compatibility.decrypts known wormhole test vector" time="0.01" asserts="0" success="True" result="Success" executed="True" />
-              <test-case description="encrypts matching wormhole test vector with fixed nonce" name="SecretBox compatibility.encrypts matching wormhole test vector with fixed nonce" time="0.0071" asserts="0" success="True" result="Success" executed="True" />
+              <test-case description="decrypts known wormhole test vector" name="SecretBox compatibility.decrypts known wormhole test vector" time="0.1473" asserts="0" success="True" result="Success" executed="True" />
+              <test-case description="encrypts matching wormhole test vector with fixed nonce" name="SecretBox compatibility.encrypts matching wormhole test vector with fixed nonce" time="0.042" asserts="0" success="True" result="Success" executed="True" />
+            </results>
+          </test-suite>
+          <test-suite type="TestFixture" name="File transfer: transit key derivation" executed="True" result="Success" success="True" time="4.2718" asserts="0" description="File transfer: transit key derivation">
+            <results>
+              <test-case description="Get-WormholeTransitKey returns 32 bytes" name="File transfer: transit key derivation.Get-WormholeTransitKey returns 32 bytes" time="0.0133" asserts="0" success="True" result="Success" executed="True" />
+              <test-case description="Get-WormholeTransitKey is deterministic" name="File transfer: transit key derivation.Get-WormholeTransitKey is deterministic" time="0.0063" asserts="0" success="True" result="Success" executed="True" />
+              <test-case description="Get-WormholeTransitRecordKey differs between sender and receiver" name="File transfer: transit key derivation.Get-WormholeTransitRecordKey differs between sender and receiver" time="0.0207" asserts="0" success="True" result="Success" executed="True" />
+            </results>
+          </test-suite>
+          <test-suite type="TestFixture" name="File transfer: transit record nonce" executed="True" result="Success" success="True" time="4.3286" asserts="0" description="File transfer: transit record nonce">
+            <results>
+              <test-case description="returns a 24-byte nonce" name="File transfer: transit record nonce.returns a 24-byte nonce" time="0.0145" asserts="0" success="True" result="Success" executed="True" />
+              <test-case description="first 20 bytes are zero" name="File transfer: transit record nonce.first 20 bytes are zero" time="0.0149" asserts="0" success="True" result="Success" executed="True" />
+              <test-case description="encodes sequence number big-endian in bytes 20-23" name="File transfer: transit record nonce.encodes sequence number big-endian in bytes 20-23" time="0.0104" asserts="0" success="True" result="Success" executed="True" />
+              <test-case description="encodes large sequence number correctly" name="File transfer: transit record nonce.encodes large sequence number correctly" time="0.0105" asserts="0" success="True" result="Success" executed="True" />
+            </results>
+          </test-suite>
+          <test-suite type="TestFixture" name="File transfer: transit info builder" executed="True" result="Success" success="True" time="4.4204" asserts="0" description="File transfer: transit info builder">
+            <results>
+              <test-case description="Build-WormholeTransitInfo includes relay-v1 ability" name="File transfer: transit info builder.Build-WormholeTransitInfo includes relay-v1 ability" time="0.0671" asserts="0" success="True" result="Success" executed="True" />
+              <test-case description="Build-WormholeTransitInfo includes relay hostname and port" name="File transfer: transit info builder.Build-WormholeTransitInfo includes relay hostname and port" time="0.0164" asserts="0" success="True" result="Success" executed="True" />
+            </results>
+          </test-suite>
+          <test-suite type="TestFixture" name="File transfer: record encrypt/decrypt round-trip" executed="True" result="Success" success="True" time="4.4827" asserts="0" description="File transfer: record encrypt/decrypt round-trip">
+            <results>
+              <test-case description="transit record survives encrypt + decrypt with matching nonce" name="File transfer: record encrypt/decrypt round-trip.transit record survives encrypt + decrypt with matching nonce" time="0.0567" asserts="0" success="True" result="Success" executed="True" />
+            </results>
+          </test-suite>
+          <test-suite type="TestFixture" name="Send-WormholeFile and Receive-WormholeFile parameters" executed="True" result="Success" success="True" time="4.5126" asserts="0" description="Send-WormholeFile and Receive-WormholeFile parameters">
+            <results>
+              <test-case description="Send-WormholeFile accepts TimeoutSeconds parameter" name="Send-WormholeFile and Receive-WormholeFile parameters.Send-WormholeFile accepts TimeoutSeconds parameter" time="0.01" asserts="0" success="True" result="Success" executed="True" />
+              <test-case description="Receive-WormholeFile accepts TimeoutSeconds parameter" name="Send-WormholeFile and Receive-WormholeFile parameters.Receive-WormholeFile accepts TimeoutSeconds parameter" time="0.0061" asserts="0" success="True" result="Success" executed="True" />
+              <test-case description="Receive-WormholeFile has OutputDirectory defaulting to current location" name="Send-WormholeFile and Receive-WormholeFile parameters.Receive-WormholeFile has OutputDirectory defaulting to current location" time="0.0058" asserts="0" success="True" result="Success" executed="True" />
             </results>
           </test-suite>
         </results>

@@ -370,12 +370,16 @@ function Invoke-Poly1305Mac {
         [Parameter(Mandatory = $true)]
         [byte[]] $Key,
 
-        [Parameter(Mandatory = $true)]
+        [Parameter()]
         [byte[]] $Message
     )
 
     if ($Key.Length -ne 32) {
         throw 'Poly1305 key must be 32 bytes.'
+    }
+
+    if ($null -eq $Message) {
+        $Message = [byte[]]::new(0)
     }
 
     $rBytes = [byte[]]::new(16)
@@ -437,7 +441,7 @@ function Protect-WormholeSecretBoxInternal {
         [Parameter(Mandatory = $true)]
         [byte[]] $Key,
 
-        [Parameter(Mandatory = $true)]
+        [Parameter()]
         [byte[]] $Plaintext,
 
         [Parameter(Mandatory = $true)]
@@ -446,6 +450,10 @@ function Protect-WormholeSecretBoxInternal {
 
     if ($Key.Length -ne 32) { throw 'SecretBox key must be 32 bytes.' }
     if ($Nonce.Length -ne 24) { throw 'SecretBox nonce must be 24 bytes.' }
+
+    if ($null -eq $Plaintext) {
+        $Plaintext = [byte[]]::new(0)
+    }
 
     $nonce16 = [byte[]]::new(16)
     $nonce8 = [byte[]]::new(8)

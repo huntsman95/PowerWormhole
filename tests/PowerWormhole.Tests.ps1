@@ -146,3 +146,132 @@ Describe 'SecretBox compatibility' {
         }
     }
 }
+
+Describe 'File transfer: transit key derivation' {
+    It 'Get-WormholeTransitKey returns 32 bytes' {
+        InModuleScope PowerWormhole {
+            $sharedKey = [byte[]]::new(32)
+            $key = Get-WormholeTransitKey -SharedKey $sharedKey -AppId 'lothar.com/wormhole/text-or-file-xfer'
+            $key.Length | Should -Be 32
+        }
+    }
+
+    It 'Get-WormholeTransitKey is deterministic' {
+        InModuleScope PowerWormhole {
+            $sharedKey = [System.Text.Encoding]::UTF8.GetBytes('test-shared-key-padding-to-32byt')
+            $k1 = Get-WormholeTransitKey -SharedKey $sharedKey -AppId 'test-app'
+            $k2 = Get-WormholeTransitKey -SharedKey $sharedKey -AppId 'test-app'
+            (ConvertTo-WormholeHex -Bytes $k1) | Should -Be (ConvertTo-WormholeHex -Bytes $k2)
+        }
+    }
+
+    It 'Get-WormholeTransitRecordKey differs between sender and receiver' {
+        InModuleScope PowerWormhole {
+            $transitKey = [byte[]]::new(32)
+            $senderKey   = Get-WormholeTransitRecordKey -TransitKey $transitKey -Direction 'sender'
+            $receiverKey = Get-WormholeTransitRecordKey -TransitKey $transitKey -Direction 'receiver'
+            $senderKey.Length   | Should -Be 32
+            $receiverKey.Length | Should -Be 32
+            (ConvertTo-WormholeHex -Bytes $senderKey) | Should -Not -Be (ConvertTo-WormholeHex -Bytes $receiverKey)
+        }
+    }
+}
+
+Describe 'File transfer: transit record nonce' {
+    It 'returns a 24-byte nonce' {
+        InModuleScope PowerWormhole {
+            $nonce = New-WormholeTransitRecordNonce -SeqNum 0
+            $nonce.Length | Should -Be 24
+        }
+    }
+
+    It 'first 20 bytes are zero' {
+        InModuleScope PowerWormhole {
+            $nonce = New-WormholeTransitRecordNonce -SeqNum 7
+            $nonce[0..19] | Should -Be ([byte[]]::new(20))
+        }
+    }
+
+    It 'encodes sequence number big-endian in bytes 20-23' {
+        InModuleScope PowerWormhole {
+            $nonce = New-WormholeTransitRecordNonce -SeqNum 1
+            $nonce[20] | Should -Be 0
+            $nonce[21] | Should -Be 0
+            $nonce[22] | Should -Be 0
+            $nonce[23] | Should -Be 1
+        }
+    }
+
+    It 'encodes large sequence number correctly' {
+        InModuleScope PowerWormhole {
+            # seqNum = 0x01020304
+            $nonce = New-WormholeTransitRecordNonce -SeqNum 0x01020304
+            $nonce[20] | Should -Be 0x01
+            $nonce[21] | Should -Be 0x02
+            $nonce[22] | Should -Be 0x03
+            $nonce[23] | Should -Be 0x04
+        }
+    }
+}
+
+Describe 'File transfer: transit info builder' {
+    It 'Build-WormholeTransitInfo includes relay-v1 ability' {
+        InModuleScope PowerWormhole {
+            $info = Build-WormholeTransitInfo -TransitRelay 'tcp:transit.magic-wormhole.io:4001'
+            $abilities = $info['abilities-v1']
+            $abilities | Where-Object { $_.type -eq 'relay-v1' } | Should -Not -BeNullOrEmpty
+        }
+    }
+
+    It 'Build-WormholeTransitInfo includes relay hostname and port' {
+        InModuleScope PowerWormhole {
+            $info = Build-WormholeTransitInfo -TransitRelay 'tcp:transit.magic-wormhole.io:4001'
+            $relayHint = $info['hints-v1'] | Where-Object { $_.type -eq 'relay-v1' }
+            $relayHint | Should -Not -BeNullOrEmpty
+            $endpoint = $relayHint.hints[0]
+            $endpoint.hostname | Should -Be 'transit.magic-wormhole.io'
+            $endpoint.port     | Should -Be 4001
+        }
+    }
+}
+
+Describe 'File transfer: record encrypt/decrypt round-trip' {
+    It 'transit record survives encrypt + decrypt with matching nonce' {
+        InModuleScope PowerWormhole {
+            $key = ConvertFrom-WormholeHex -Hex 'deadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef'
+            $plain = [System.Text.Encoding]::UTF8.GetBytes('hello transit record')
+
+            $seqNum = [uint32]42
+            $nonce  = New-WormholeTransitRecordNonce -SeqNum $seqNum
+            $boxed  = Protect-WormholeSecretBox -Key $key -Plaintext $plain -Nonce $nonce
+
+            # Strip prepended nonce to get wire format, then re-attach
+            $cipherRecord = [byte[]]::new($boxed.Length - 24)
+            [Array]::Copy($boxed, 24, $cipherRecord, 0, $cipherRecord.Length)
+
+            $fullCipher = [byte[]]::new(24 + $cipherRecord.Length)
+            [Array]::Copy($nonce, 0, $fullCipher, 0, 24)
+            [Array]::Copy($cipherRecord, 0, $fullCipher, 24, $cipherRecord.Length)
+
+            $decrypted = Unprotect-WormholeSecretBox -Key $key -Ciphertext $fullCipher
+            [System.Text.Encoding]::UTF8.GetString($decrypted) | Should -Be 'hello transit record'
+        }
+    }
+}
+
+Describe 'Send-WormholeFile and Receive-WormholeFile parameters' {
+    It 'Send-WormholeFile accepts TimeoutSeconds parameter' {
+        $cmd = Get-Command -Name Send-WormholeFile
+        $cmd.Parameters.ContainsKey('TimeoutSeconds') | Should -BeTrue
+    }
+
+    It 'Receive-WormholeFile accepts TimeoutSeconds parameter' {
+        $cmd = Get-Command -Name Receive-WormholeFile
+        $cmd.Parameters.ContainsKey('TimeoutSeconds') | Should -BeTrue
+    }
+
+    It 'Receive-WormholeFile has OutputDirectory defaulting to current location' {
+        $cmd = Get-Command -Name Receive-WormholeFile
+        $cmd.Parameters.ContainsKey('OutputDirectory') | Should -BeTrue
+    }
+}

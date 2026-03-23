@@ -9,6 +9,9 @@ function Send-WormholeFile {
         [string] $Code,
 
         [Parameter()]
+        [int] $TimeoutSeconds = 300,
+
+        [Parameter()]
         [string] $RelayUrl = $script:PowerWormholeDefaults.RelayUrl,
 
         [Parameter()]
@@ -25,7 +28,7 @@ function Send-WormholeFile {
             $session = Open-Wormhole -Code $Code -RelayUrl $RelayUrl -AppId $AppId
         }
 
-        Invoke-WormholeFileSendProtocol -Session $session -Path $Path
+        Invoke-WormholeFileSendProtocol -Session $session -Path $Path -TimeoutSeconds $TimeoutSeconds -StatusCallback { param($message) Write-Verbose $message }
     }
     finally {
         if ($null -ne $session) {
