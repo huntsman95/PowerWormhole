@@ -57,6 +57,7 @@ foreach ($scriptFile in $publicScripts) {
 
 Export-ModuleMember -Function @(
     'New-WormholeCode',
+    'Receive-Wormhole',
     'Send-WormholeText',
     'Receive-WormholeText',
     'Send-WormholeFile',

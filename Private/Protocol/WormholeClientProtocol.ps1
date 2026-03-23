@@ -201,3 +201,159 @@ function Invoke-WormholeTextReceiveProtocol {
         Write-WormholeDebug -Component 'protocol' -Message 'Application payload did not contain offer.message; continuing wait.' -Session $Session
     }
 }
+
+function Invoke-WormholeReceiveProtocol {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory = $true)]
+        [pscustomobject] $Session,
+
+        [Parameter()]
+        [string] $OutputDirectory = (Get-Location).Path,
+
+        [Parameter()]
+        [int] $TimeoutSeconds = 300,
+
+        [Parameter()]
+        [scriptblock] $StatusCallback
+    )
+
+    Invoke-WormholeStatus -StatusCallback $StatusCallback -Message 'Starting key exchange...'
+    Write-WormholeDebug -Component 'protocol' -Message 'Unified receive protocol started.' -Session $Session -Data @{ timeoutSeconds = $TimeoutSeconds; outputDirectory = $OutputDirectory }
+
+    $pakeContext = Initialize-WormholePake -Session $Session
+    $pakeEnvelope = [System.Text.Encoding]::UTF8.GetBytes((ConvertTo-Json -InputObject @{ pake_v1 = (ConvertTo-WormholeHex -Bytes $pakeContext.Message) } -Depth 5 -Compress))
+    Add-WormholeMailboxPayload -Session $Session -Phase 'pake' -Body $pakeEnvelope
+
+    $peerPake = Receive-WormholeMailboxPayload -Session $Session -Phase 'pake' -TimeoutSeconds $TimeoutSeconds
+    $peerPakeObject = ConvertFrom-Json -InputObject ([System.Text.Encoding]::UTF8.GetString($peerPake.Body))
+    $peerPakeBytes = ConvertFrom-WormholeHex -Hex ([string]$peerPakeObject.pake_v1)
+    $result = Complete-WormholeSpake2 -Context $pakeContext -PeerMessage $peerPakeBytes
+
+    $versionPayload = @{ app_versions = @{ 'PowerWormhole' = '0.1.0' } }
+    $versionBytes = [System.Text.Encoding]::UTF8.GetBytes((ConvertTo-Json -InputObject $versionPayload -Depth 10 -Compress))
+    $versionKey = Get-WormholeDerivedPhaseKey -SharedKey $result.SharedKey -Side $Session.Side -Phase 'version'
+    $cipherVersion = Protect-WormholeSecretBox -Key $versionKey -Plaintext $versionBytes
+    Add-WormholeMailboxPayload -Session $Session -Phase 'version' -Body $cipherVersion
+
+    Invoke-WormholeStatus -StatusCallback $StatusCallback -Message 'PAKE complete. Verifying peer version...'
+    $peerVersion = Receive-WormholeMailboxPayload -Session $Session -Phase 'version' -TimeoutSeconds $TimeoutSeconds
+    $peerVersionKey = Get-WormholeDerivedPhaseKey -SharedKey $result.SharedKey -Side $peerVersion.Side -Phase 'version'
+    [void](Unprotect-WormholeSecretBox -Key $peerVersionKey -Ciphertext $peerVersion.Body)
+
+    $transitKey = Get-WormholeTransitKey -SharedKey $result.SharedKey -AppId $Session.AppId
+    $senderRecordKey   = Get-WormholeTransitRecordKey -TransitKey $transitKey -Direction 'sender'
+    $receiverRecordKey = Get-WormholeTransitRecordKey -TransitKey $transitKey -Direction 'receiver'
+
+    $peerTransitReceived = $false
+    $peerRelayAddress = $script:PowerWormholeDefaults.TransitRelay
+    $fileOfferReceived = $false
+    $fileName = $null
+    [long]$fileSize = 0
+
+    Invoke-WormholeStatus -StatusCallback $StatusCallback -Message 'Waiting for inbound offer...'
+    $waitDeadline = [DateTimeOffset]::UtcNow.AddSeconds($TimeoutSeconds)
+
+    while ([DateTimeOffset]::UtcNow -lt $waitDeadline) {
+        $remaining = [int][Math]::Ceiling(($waitDeadline - [DateTimeOffset]::UtcNow).TotalSeconds)
+        $incoming = Receive-WormholeMailboxPayload -Session $Session -TimeoutSeconds $remaining
+
+        if ($incoming.Phase -notmatch '^\d+$') {
+            continue
+        }
+
+        $incomingKey = Get-WormholeDerivedPhaseKey -SharedKey $result.SharedKey -Side $incoming.Side -Phase $incoming.Phase
+        $plainBytes = Unprotect-WormholeSecretBox -Key $incomingKey -Ciphertext $incoming.Body
+        $obj = ConvertFrom-Json -InputObject ([System.Text.Encoding]::UTF8.GetString($plainBytes))
+
+        if ($null -ne $obj.PSObject.Properties['error'] -and $null -ne $obj.error) {
+            throw "Peer reported transfer error: $($obj.error)"
+        }
+
+        if (-not $peerTransitReceived -and $null -ne $obj.PSObject.Properties['transit']) {
+            $peerTransitReceived = $true
+            $peerRelayAddress = Get-WormholeTransitRelayFromHints -TransitInfo $obj.transit
+
+            $myTransitInfo = Build-WormholeTransitInfo
+            $transitPhase = [string]$Session.NextPhase
+            $transitPlain = [System.Text.Encoding]::UTF8.GetBytes((ConvertTo-Json -InputObject @{ transit = $myTransitInfo } -Depth 10 -Compress))
+            $transitKeyPhase = Get-WormholeDerivedPhaseKey -SharedKey $result.SharedKey -Side $Session.Side -Phase $transitPhase
+            Add-WormholeMailboxPayload -Session $Session -Phase $transitPhase -Body (Protect-WormholeSecretBox -Key $transitKeyPhase -Plaintext $transitPlain)
+            $Session.NextPhase += 1
+
+            if (-not $fileOfferReceived) {
+                continue
+            }
+        }
+
+        $offerProp = $obj.PSObject.Properties['offer']
+        if ($null -eq $offerProp -or $null -eq $offerProp.Value) {
+            continue
+        }
+
+        if ($null -ne $offerProp.Value.PSObject.Properties['message'] -and $null -ne $offerProp.Value.message) {
+            $messageText = [string]$offerProp.Value.message
+            $answerPhase = [string]$Session.NextPhase
+            $answerPayload = [System.Text.Encoding]::UTF8.GetBytes((ConvertTo-Json -InputObject @{ answer = @{ message_ack = 'ok' } } -Depth 10 -Compress))
+            $answerKey = Get-WormholeDerivedPhaseKey -SharedKey $result.SharedKey -Side $Session.Side -Phase $answerPhase
+            $answerCipher = Protect-WormholeSecretBox -Key $answerKey -Plaintext $answerPayload
+            Add-WormholeMailboxPayload -Session $Session -Phase $answerPhase -Body $answerCipher
+            $Session.NextPhase += 1
+
+            Invoke-WormholeStatus -StatusCallback $StatusCallback -Message 'Text message received.'
+            return [pscustomobject]@{
+                Type = 'text'
+                Text = $messageText
+                FilePath = $null
+                FileName = $null
+                FileSize = $null
+            }
+        }
+
+        if ($null -ne $offerProp.Value.PSObject.Properties['file'] -and $null -ne $offerProp.Value.file) {
+            $fileOfferReceived = $true
+            $fileName = [string]$offerProp.Value.file.filename
+            $fileSize = [long]$offerProp.Value.file.filesize
+
+            if (-not $peerTransitReceived) {
+                continue
+            }
+
+            $answerPhase = [string]$Session.NextPhase
+            $answerPlain = [System.Text.Encoding]::UTF8.GetBytes((ConvertTo-Json -InputObject @{ answer = @{ file_ack = 'ok' } } -Depth 10 -Compress))
+            $answerPhaseKey = Get-WormholeDerivedPhaseKey -SharedKey $result.SharedKey -Side $Session.Side -Phase $answerPhase
+            Add-WormholeMailboxPayload -Session $Session -Phase $answerPhase -Body (Protect-WormholeSecretBox -Key $answerPhaseKey -Plaintext $answerPlain)
+            $Session.NextPhase += 1
+
+            $outputPath = Join-Path -Path $OutputDirectory -ChildPath $fileName
+            Invoke-WormholeStatus -StatusCallback $StatusCallback -Message "Receiving file: $fileName ($fileSize bytes)..."
+            Invoke-WormholeStatus -StatusCallback $StatusCallback -Message 'Connecting to transit relay...'
+
+            $transitConn = Connect-WormholeTransitRelay -TransitRelay $peerRelayAddress -TransitKey $transitKey -Side $Session.Side -Role 'receiver' -TimeoutSeconds 60
+            try {
+                Invoke-WormholeStatus -StatusCallback $StatusCallback -Message 'Connected. Receiving file...'
+                Receive-WormholeTransitFile -Transit $transitConn `
+                    -SenderKey $senderRecordKey `
+                    -ReceiverKey $receiverRecordKey `
+                    -OutputPath $outputPath `
+                    -ExpectedSize $fileSize `
+                    -TimeoutSeconds $TimeoutSeconds `
+                    -StatusCallback $StatusCallback
+            }
+            finally {
+                try { $transitConn.Stream.Dispose() } catch { }
+                try { $transitConn.TcpClient.Dispose() } catch { }
+            }
+
+            return [pscustomobject]@{
+                Type = 'file'
+                Text = $null
+                FilePath = $outputPath
+                FileName = $fileName
+                FileSize = $fileSize
+            }
+        }
+    }
+
+    throw 'Timed out waiting for sender offer.'
+}

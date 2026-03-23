@@ -7,6 +7,7 @@ Describe 'Module import' {
     It 'exports expected public commands' {
         $commands = @(
             'New-WormholeCode',
+            'Receive-Wormhole',
             'Send-WormholeText',
             'Receive-WormholeText',
             'Send-WormholeFile',
