@@ -96,11 +96,14 @@ function Invoke-WormholeTextSendProtocol {
         $incomingText = [System.Text.Encoding]::UTF8.GetString($incomingPlainBytes)
         $incomingObject = ConvertFrom-Json -InputObject $incomingText
 
-        if ($null -ne $incomingObject.error) {
+        if ($null -ne $incomingObject.PSObject.Properties['error'] -and $null -ne $incomingObject.error) {
             throw "Peer reported transfer error: $($incomingObject.error)"
         }
 
-        if ($null -ne $incomingObject.answer -and [string]$incomingObject.answer.message_ack -eq 'ok') {
+        $answerProp = $incomingObject.PSObject.Properties['answer']
+        if ($null -ne $answerProp -and $null -ne $answerProp.Value -and
+            $null -ne $answerProp.Value.PSObject.Properties['message_ack'] -and
+            [string]$answerProp.Value.message_ack -eq 'ok') {
             Write-WormholeDebug -Component 'protocol' -Message 'Received message acknowledgement from receiver.' -Session $Session -Data @{ phase = $incoming.Phase }
             break
         }
@@ -172,8 +175,15 @@ function Invoke-WormholeTextReceiveProtocol {
         Write-WormholeDebug -Component 'protocol' -Message 'Decrypted application payload.' -Session $Session -Data @{ phase = $incoming.Phase; plainBytes = $plainBytes.Length }
         $obj = ConvertFrom-Json -InputObject $text
 
-        if ($null -ne $obj.offer.message) {
-            $messageText = [string]$obj.offer.message
+        if ($null -ne $obj.PSObject.Properties['error'] -and $null -ne $obj.error) {
+            throw "Peer reported transfer error: $($obj.error)"
+        }
+
+        $offerProp = $obj.PSObject.Properties['offer']
+        if ($null -ne $offerProp -and $null -ne $offerProp.Value -and
+            $null -ne $offerProp.Value.PSObject.Properties['message'] -and
+            $null -ne $offerProp.Value.message) {
+            $messageText = [string]$offerProp.Value.message
             Write-WormholeDebug -Component 'protocol' -Message 'Offer.message extracted successfully.' -Session $Session -Data @{ messageLength = $messageText.Length }
 
             $answerPhase = [string]$Session.NextPhase
