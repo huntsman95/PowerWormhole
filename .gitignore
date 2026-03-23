@@ -1,1 +1,4 @@
 testResults.xml
+.artifacts/
+lib/**/*.dll
+lib/**/*.xml
