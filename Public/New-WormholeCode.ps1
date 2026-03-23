@@ -24,7 +24,7 @@ function New-WormholeCode {
 
     $words = [System.Collections.Generic.List[string]]::new()
     for ($index = 0; $index -lt $CodeLength; $index += 1) {
-        $words.Add((Get-WormholeRandomWord))
+        $words.Add((Get-WormholeRandomWord -WordIndex $index))
     }
 
     "$Nameplate-$($words -join '-')"

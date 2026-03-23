@@ -34,6 +34,25 @@ Describe 'New-WormholeCode' {
     }
 }
 
+Describe 'Wordlist compatibility' {
+    It 'uses canonical PGP list sizes and alternates odd/even word positions' {
+        InModuleScope PowerWormhole {
+            $script:PowerWormholeOddWordlist.Count | Should -Be 256
+            $script:PowerWormholeEvenWordlist.Count | Should -Be 256
+
+            $code = New-WormholeCode -CodeLength 3 -Nameplate '42'
+            $parts = $code -split '-'
+
+            $parts.Count | Should -Be 4
+            $parts[0] | Should -Be '42'
+
+            $parts[1] | Should -BeIn $script:PowerWormholeOddWordlist
+            $parts[2] | Should -BeIn $script:PowerWormholeEvenWordlist
+            $parts[3] | Should -BeIn $script:PowerWormholeOddWordlist
+        }
+    }
+}
+
 Describe 'Validation helpers' {
     It 'accepts ws relay URL' {
         InModuleScope PowerWormhole {
