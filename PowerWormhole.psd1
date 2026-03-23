@@ -23,9 +23,9 @@
     PrivateData = @{
         PSData = @{
             Tags = @('wormhole', 'magic-wormhole', 'transfer', 'crypto')
-            ProjectUri = 'https://github.com/magic-wormhole/magic-wormhole'
+            ProjectUri = 'https://github.com/huntsman95/PowerWormhole'
             LicenseUri = 'https://opensource.org/license/mit'
-            Prerelease = 'alpha1'
+            Prerelease = '0.1.0'
         }
     }
 }
