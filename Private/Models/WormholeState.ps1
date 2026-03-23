@@ -1,11 +1,11 @@
 function New-PowerWormholeSession {
     [CmdletBinding()]
     param(
-        [Parameter(Mandatory = $true)]
-        [string] $Code,
+        [Parameter()]
+        [string] $Code = '',
 
-        [Parameter(Mandatory = $true)]
-        [string] $Nameplate,
+        [Parameter()]
+        [string] $Nameplate = '',
 
         [Parameter(Mandatory = $true)]
         [string] $RelayUrl,

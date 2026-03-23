@@ -222,7 +222,49 @@ function Open-WormholeMailbox {
     if ($AllocateNameplate) {
         Write-WormholeDebug -Component 'mailbox' -Message 'Allocating nameplate.' -Session $Session
         $allocated = Invoke-WormholeMailboxCommand -Session $Session -Type 'allocate' -ResponseType 'allocated'
-        $Session.Nameplate = [string]$allocated.nameplate
+
+        if ($allocated -is [System.Array]) {
+            $allocated = @($allocated | Where-Object { $null -ne $_ -and $_.PSObject.Properties['type'] -and [string]$_.type -eq 'allocated' } | Select-Object -First 1)
+            if ($allocated.Count -gt 0) {
+                $allocated = $allocated[0]
+            }
+            else {
+                $allocated = $null
+            }
+        }
+
+        $nameplate = $null
+        foreach ($propertyName in @('nameplate', 'nameplate_id', 'nameplateId')) {
+            if ($null -ne $allocated -and $null -ne $allocated.PSObject.Properties[$propertyName]) {
+                $candidateValue = [string]$allocated.$propertyName
+                if (-not [string]::IsNullOrWhiteSpace($candidateValue)) {
+                    $nameplate = $candidateValue
+                    break
+                }
+            }
+        }
+
+        if ([string]::IsNullOrWhiteSpace($nameplate) -and $null -ne $allocated -and $null -ne $allocated.PSObject.Properties['allocated']) {
+            $allocatedObject = $allocated.allocated
+            if ($null -ne $allocatedObject) {
+                foreach ($propertyName in @('nameplate', 'nameplate_id', 'nameplateId')) {
+                    if ($null -ne $allocatedObject.PSObject.Properties[$propertyName]) {
+                        $candidateValue = [string]$allocatedObject.$propertyName
+                        if (-not [string]::IsNullOrWhiteSpace($candidateValue)) {
+                            $nameplate = $candidateValue
+                            break
+                        }
+                    }
+                }
+            }
+        }
+
+        if ([string]::IsNullOrWhiteSpace($nameplate)) {
+            $allocatedJson = ConvertTo-Json -InputObject $allocated -Depth 20 -Compress
+            throw "Allocate response did not include nameplate. Response: $allocatedJson"
+        }
+
+        $Session.Nameplate = $nameplate
         Write-WormholeDebug -Component 'mailbox' -Message 'Allocated nameplate.' -Session $Session -Data @{ nameplate = $Session.Nameplate }
     }
 

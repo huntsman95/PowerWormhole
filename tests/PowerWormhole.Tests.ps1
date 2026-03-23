@@ -7,6 +7,7 @@ Describe 'Module import' {
     It 'exports expected public commands' {
         $commands = @(
             'New-WormholeCode',
+            'Send-Wormhole',
             'Receive-Wormhole',
             'Send-WormholeText',
             'Receive-WormholeText',
@@ -277,5 +278,25 @@ Describe 'Send-WormholeFile and Receive-WormholeFile parameters' {
     It 'Receive-WormholeFile has OutputDirectory defaulting to current location' {
         $cmd = Get-Command -Name Receive-WormholeFile
         $cmd.Parameters.ContainsKey('OutputDirectory') | Should -BeTrue
+    }
+}
+
+Describe 'Send-Wormhole parameter sets' {
+    It 'has Text and File parameter sets' {
+        $cmd = Get-Command -Name Send-Wormhole
+        ($cmd.ParameterSets | Select-Object -ExpandProperty Name) | Should -Contain 'Text'
+        ($cmd.ParameterSets | Select-Object -ExpandProperty Name) | Should -Contain 'File'
+    }
+
+    It 'exposes Text only in Text set and FilePath only in File set' {
+        $cmd = Get-Command -Name Send-Wormhole
+        $textSet = $cmd.ParameterSets | Where-Object Name -eq 'Text'
+        $fileSet = $cmd.ParameterSets | Where-Object Name -eq 'File'
+
+        ($textSet.Parameters | Select-Object -ExpandProperty Name) | Should -Contain 'Text'
+        ($textSet.Parameters | Select-Object -ExpandProperty Name) | Should -Not -Contain 'FilePath'
+
+        ($fileSet.Parameters | Select-Object -ExpandProperty Name) | Should -Contain 'FilePath'
+        ($fileSet.Parameters | Select-Object -ExpandProperty Name) | Should -Not -Contain 'Text'
     }
 }
