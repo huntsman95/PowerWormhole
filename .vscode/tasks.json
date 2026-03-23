@@ -1,0 +1,31 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "Run Pester tests",
+			"type": "shell",
+			"command": "powershell",
+			"args": [
+				"-NoProfile",
+				"-ExecutionPolicy",
+				"Bypass",
+				"-Command",
+				"Import-Module Pester -RequiredVersion 5.7.1 -Force; Invoke-Pester -Path .\\tests -CI -Output Detailed"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "Run Pester tests",
+			"type": "shell",
+			"command": "powershell",
+			"args": [
+				"-NoProfile",
+				"-ExecutionPolicy",
+				"Bypass",
+				"-Command",
+				"Import-Module Pester -RequiredVersion 5.7.1 -Force; Invoke-Pester -Path .\\tests -CI -Output Detailed"
+			],
+			"isBackground": false
+		}
+	]
+}
