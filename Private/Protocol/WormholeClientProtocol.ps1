@@ -78,9 +78,36 @@ function Invoke-WormholeTextSendProtocol {
     $phaseKey = Get-WormholeDerivedPhaseKey -SharedKey $result.SharedKey -Side $Session.Side -Phase $phase
     $cipher = Protect-WormholeSecretBox -Key $phaseKey -Plaintext $plaintext
     Add-WormholeMailboxPayload -Session $Session -Phase $phase -Body $cipher
-    Write-WormholeDebug -Component 'protocol' -Message 'Sent encrypted application payload.' -Session $Session -Data @{ phase = $phase; plainBytes = $plaintext.Length; cipherBytes = $cipher.Length }
+    Write-WormholeDebug -Component 'protocol' -Message 'Sent encrypted offer payload.' -Session $Session -Data @{ phase = $phase; plainBytes = $plaintext.Length; cipherBytes = $cipher.Length }
 
     $Session.NextPhase += 1
+    Invoke-WormholeStatus -StatusCallback $StatusCallback -Message 'Offer sent. Waiting for receiver acknowledgement...'
+
+    while ($true) {
+        $incoming = Receive-WormholeMailboxPayload -Session $Session -TimeoutSeconds $TimeoutSeconds
+        Write-WormholeDebug -Component 'protocol' -Message 'Received post-offer response candidate.' -Session $Session -Data @{ phase = $incoming.Phase; side = $incoming.Side; bytes = $incoming.Body.Length }
+        if ($incoming.Phase -notmatch '^\d+$') {
+            Write-WormholeDebug -Component 'protocol' -Message 'Skipping non-numeric post-offer message.' -Session $Session -Data @{ phase = $incoming.Phase }
+            continue
+        }
+
+        $incomingKey = Get-WormholeDerivedPhaseKey -SharedKey $result.SharedKey -Side $incoming.Side -Phase $incoming.Phase
+        $incomingPlainBytes = Unprotect-WormholeSecretBox -Key $incomingKey -Ciphertext $incoming.Body
+        $incomingText = [System.Text.Encoding]::UTF8.GetString($incomingPlainBytes)
+        $incomingObject = ConvertFrom-Json -InputObject $incomingText
+
+        if ($null -ne $incomingObject.error) {
+            throw "Peer reported transfer error: $($incomingObject.error)"
+        }
+
+        if ($null -ne $incomingObject.answer -and [string]$incomingObject.answer.message_ack -eq 'ok') {
+            Write-WormholeDebug -Component 'protocol' -Message 'Received message acknowledgement from receiver.' -Session $Session -Data @{ phase = $incoming.Phase }
+            break
+        }
+
+        Write-WormholeDebug -Component 'protocol' -Message 'Post-offer response did not contain message acknowledgement.' -Session $Session -Data @{ phase = $incoming.Phase }
+    }
+
     Invoke-WormholeStatus -StatusCallback $StatusCallback -Message 'Text message sent.'
     Write-WormholeDebug -Component 'protocol' -Message 'Text send protocol complete.' -Session $Session
 }
@@ -146,9 +173,19 @@ function Invoke-WormholeTextReceiveProtocol {
         $obj = ConvertFrom-Json -InputObject $text
 
         if ($null -ne $obj.offer.message) {
+            $messageText = [string]$obj.offer.message
+            Write-WormholeDebug -Component 'protocol' -Message 'Offer.message extracted successfully.' -Session $Session -Data @{ messageLength = $messageText.Length }
+
+            $answerPhase = [string]$Session.NextPhase
+            $answerPayload = [System.Text.Encoding]::UTF8.GetBytes((ConvertTo-Json -InputObject @{ answer = @{ message_ack = 'ok' } } -Depth 10 -Compress))
+            $answerKey = Get-WormholeDerivedPhaseKey -SharedKey $result.SharedKey -Side $Session.Side -Phase $answerPhase
+            $answerCipher = Protect-WormholeSecretBox -Key $answerKey -Plaintext $answerPayload
+            Add-WormholeMailboxPayload -Session $Session -Phase $answerPhase -Body $answerCipher
+            $Session.NextPhase += 1
+            Write-WormholeDebug -Component 'protocol' -Message 'Sent message acknowledgement to sender.' -Session $Session -Data @{ phase = $answerPhase }
+
             Invoke-WormholeStatus -StatusCallback $StatusCallback -Message 'Text message received.'
-            Write-WormholeDebug -Component 'protocol' -Message 'Offer.message extracted successfully.' -Session $Session -Data @{ messageLength = ([string]$obj.offer.message).Length }
-            return [string]$obj.offer.message
+            return $messageText
         }
 
         Write-WormholeDebug -Component 'protocol' -Message 'Application payload did not contain offer.message; continuing wait.' -Session $Session
