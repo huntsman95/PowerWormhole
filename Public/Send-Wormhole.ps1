@@ -44,7 +44,15 @@ function Send-Wormhole {
         if (-not $NoStatus) {
             $statusCallback = {
                 param($Message)
-                Write-Host "[send] $Message"
+                # Parse progress message format: "Sending file: X / Y bytes"
+                if ($Message -match 'Sending file:\s+(\d+)\s+/\s+(\d+)\s+bytes') {
+                    $current = [long]$matches[1]
+                    $total = [long]$matches[2]
+                    $percent = if ($total -gt 0) { [int](($current / $total) * 100) } else { 0 }
+                    Write-Progress -Activity 'Sending file' -Status "$([System.Math]::Round($current / 1MB, 2)) MB / $([System.Math]::Round($total / 1MB, 2)) MB" -PercentComplete $percent
+                } else {
+                    Write-Host "[send] $Message"
+                }
             }
         }
 

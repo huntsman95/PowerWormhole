@@ -31,7 +31,15 @@ function Receive-Wormhole {
         if (-not $NoStatus) {
             $statusCallback = {
                 param($Message)
-                Write-Host "[recv] $Message"
+                # Parse progress message format: "Receiving file: X / Y bytes"
+                if ($Message -match 'Receiving file:\s+(\d+)\s+/\s+(\d+)\s+bytes') {
+                    $current = [long]$matches[1]
+                    $total = [long]$matches[2]
+                    $percent = if ($total -gt 0) { [int](($current / $total) * 100) } else { 0 }
+                    Write-Progress -Activity 'Receiving file' -Status "$([System.Math]::Round($current / 1MB, 2)) MB / $([System.Math]::Round($total / 1MB, 2)) MB" -PercentComplete $percent
+                } else {
+                    Write-Host "[recv] $Message"
+                }
             }
         }
 

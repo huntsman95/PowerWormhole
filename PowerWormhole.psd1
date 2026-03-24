@@ -5,7 +5,7 @@
         'lib\System.Runtime.CompilerServices.Unsafe\System.Runtime.CompilerServices.Unsafe.dll',
         'lib\NaCl.Net\NaCl.dll'
     )
-    ModuleVersion = '0.1.0'
+    ModuleVersion = '0.1.1'
     GUID = 'c6ed795c-69ef-4147-9dc1-853d515d3514'
     Author = 'Hunter Klein'
     CompanyName = 'Skryptek, LLC'
