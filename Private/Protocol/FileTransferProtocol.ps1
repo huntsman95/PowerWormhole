@@ -56,6 +56,7 @@ function Build-WormholeTransitInfo {
                 type  = 'relay-v1'
                 hints = @(
                     @{
+                        type     = 'direct-tcp-v1' # adding this fixes file transfers to wormhole-william
                         hostname = $hostname
                         port     = $port
                         priority = 0.0
