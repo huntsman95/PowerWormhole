@@ -42,6 +42,43 @@ function Get-NuGetFlatContainerUrl {
     return "https://api.nuget.org/v3-flatcontainer/$lowerPackageId/$lowerVersion/$lowerPackageId.$lowerVersion.nupkg"
 }
 
+function Copy-FilteredBuildItem {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string] $SourcePath,
+
+        [Parameter(Mandatory = $true)]
+        [string] $DestinationPath
+    )
+
+    $sourceItem = Get-Item -LiteralPath $SourcePath -Force
+    if ($sourceItem.Name -like '.*') {
+        return
+    }
+
+    if ($sourceItem.PSIsContainer) {
+        New-Item -Path $DestinationPath -ItemType Directory -Force | Out-Null
+        $children = Get-ChildItem -LiteralPath $sourceItem.FullName -Force
+        foreach ($child in $children) {
+            if ($child.Name -like '.*') {
+                continue
+            }
+
+            $childDestination = Join-Path $DestinationPath $child.Name
+            Copy-FilteredBuildItem -SourcePath $child.FullName -DestinationPath $childDestination
+        }
+
+        return
+    }
+
+    $destinationDirectory = Split-Path -Path $DestinationPath -Parent
+    if (-not (Test-Path -LiteralPath $destinationDirectory)) {
+        New-Item -Path $destinationDirectory -ItemType Directory -Force | Out-Null
+    }
+
+    Copy-Item -LiteralPath $sourceItem.FullName -Destination $DestinationPath -Force
+}
+
 task Restore-LibPackages {
     New-Item -Path $script:NuGetCacheRoot -ItemType Directory -Force | Out-Null
 
@@ -92,6 +129,49 @@ task Restore-LibPackages {
 
         Write-Host "Restored $packageId $version assets to $destinationFolder"
     }
+}
+
+task Package-Module {
+    $manifestPath = Join-Path $script:ProjectRoot 'PowerWormhole.psd1'
+    $manifestData = Import-PowerShellDataFile -Path $manifestPath
+    #$moduleVersion = [string] $manifestData.ModuleVersion
+    $moduleVersion = 'PowerWormhole-' + $manifestData.ModuleVersion
+
+    if ([string]::IsNullOrWhiteSpace($moduleVersion)) {
+        throw "ModuleVersion is missing in '$manifestPath'."
+    }
+
+    $buildRoot = Join-Path $script:ProjectRoot 'Build'
+    $versionBuildRoot = Join-Path $buildRoot $moduleVersion
+
+    if (Test-Path -LiteralPath $versionBuildRoot) {
+          Remove-Item -LiteralPath $versionBuildRoot -Recurse -Force
+    }
+
+    New-Item -Path $versionBuildRoot -ItemType Directory -Force | Out-Null
+
+     $excludedTopLevelDirectories = @('Build', 'docs', 'tests')
+    $excludedTopLevelFiles = @('README.md', 'testResults.xml')
+    $rootItems = Get-ChildItem -LiteralPath $script:ProjectRoot -Force
+
+    foreach ($item in $rootItems) {
+        if ($item.Name -like '.*') {
+            continue
+        }
+
+        if ($item.PSIsContainer -and ($excludedTopLevelDirectories -contains $item.Name)) {
+            continue
+        }
+
+        if ((-not $item.PSIsContainer) -and ($excludedTopLevelFiles -contains $item.Name)) {
+            continue
+        }
+
+        $destinationPath = Join-Path $versionBuildRoot $item.Name
+        Copy-FilteredBuildItem -SourcePath $item.FullName -DestinationPath $destinationPath
+    }
+
+    Write-Host "Packaged module to $versionBuildRoot"
 }
 
 task . Restore-LibPackages
