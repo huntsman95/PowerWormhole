@@ -25,7 +25,7 @@
             Tags = @('wormhole', 'magic-wormhole', 'transfer', 'crypto')
             ProjectUri = 'https://github.com/huntsman95/PowerWormhole'
             LicenseUri = 'https://opensource.org/license/mit'
-            Prerelease = '0.1.0'
+            Prerelease = 'beta'
         }
     }
 }
